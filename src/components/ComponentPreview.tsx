@@ -36,6 +36,8 @@ const ComponentPreview = ({ component, code }: ComponentPreviewProps) => {
               borderRadius: 0,
               minHeight: '200px'
             }}
+            showLineNumbers={true}
+            wrapLines={true}
           >
             {code}
           </SyntaxHighlighter>
