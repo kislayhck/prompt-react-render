@@ -5,13 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "./ui/table";
 
 // Define TypeScript interfaces for the component types
-interface TextProps {
+export interface TextProps {
   variant: 'heading' | 'subheading' | 'paragraph';
   content: string;
   align?: 'left' | 'center' | 'right';
 }
 
-interface ChartProps {
+export interface ChartProps {
   chartType: 'bar' | 'line' | 'pie';
   title: string;
   data: Array<Record<string, any>>;
@@ -19,26 +19,26 @@ interface ChartProps {
   yKey: string;
 }
 
-interface TableProps {
+export interface TableProps {
   headers: string[];
   rows: any[][];
   striped?: boolean;
   hoverable?: boolean;
 }
 
-interface CardProps {
+export interface CardProps {
   title: string;
   subtitle?: string;
   image?: string;
   content: string;
 }
 
-interface ComponentItem {
+export interface ComponentItem {
   type: 'text' | 'chart' | 'table' | 'card';
   props: TextProps | ChartProps | TableProps | CardProps;
 }
 
-interface DynamicComponentsProps {
+export interface DynamicComponentsProps {
   components: ComponentItem[];
 }
 
