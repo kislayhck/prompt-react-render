@@ -5,6 +5,7 @@ import { generateCardComponent } from './generators/cardGenerator';
 import { generateDynamicComponent } from './generators/dynamicComponentGenerator';
 import { generateApiSearchComponent } from './generators/apiSearchGenerator';
 import { GeneratedComponent } from './types';
+import { extractApiUrl } from './services/apiService';
 
 export { type GeneratedComponent } from './types';
 
@@ -17,12 +18,14 @@ export const generateComponent = (prompt: string): GeneratedComponent => {
     return generateApiSearchComponent(prompt);
   }
   
-  // Check for regular API requests
-  else if (lowerPrompt.includes('api') && lowerPrompt.includes('http')) {
+  // Check for regular API requests with URLs
+  else if ((lowerPrompt.includes('api') || lowerPrompt.includes('http')) && 
+           (extractApiUrl(prompt) !== 'https://jsonplaceholder.typicode.com/users' || 
+           lowerPrompt.includes('jsonplaceholder'))) {
     return generateApiTableComponent(prompt);
   }
   
-  // Check if the prompt might contain component data
+  // Check if the prompt might contain dynamic component data
   else if (lowerPrompt.includes('components') && 
       (lowerPrompt.includes('chart') || 
        lowerPrompt.includes('table') || 

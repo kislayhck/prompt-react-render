@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { GeneratedComponent } from '../types';
 import { Input } from '../../components/ui/input';
@@ -8,76 +7,31 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '.
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Search } from 'lucide-react';
+import { extractApiUrl, useApiRequest, getChartFields } from '../services/apiService';
 
 export const generateApiSearchComponent = (prompt: string): GeneratedComponent => {
-  // Extract API URL from the prompt if present
-  const apiUrlMatch = prompt.match(/api\s+(https?:\/\/[^\s]+)/i);
-  const apiUrl = apiUrlMatch ? apiUrlMatch[1] : 'https://jsonplaceholder.typicode.com/users';
+  // Extract API URL from the prompt
+  const apiUrl = extractApiUrl(prompt);
   
   const ApiSearchComponent = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [data, setData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-    const [responseType, setResponseType] = useState<'table' | 'chart' | 'card' | null>(null);
+    const [activeSearch, setActiveSearch] = useState('');
     
-    const handleSearch = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Append search term as query parameter if provided
-        const url = searchTerm 
-          ? `${apiUrl}${apiUrl.includes('?') ? '&' : '?'}q=${encodeURIComponent(searchTerm)}` 
-          : apiUrl;
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        const resultArray = Array.isArray(result) ? result : [result];
-        setData(resultArray);
-        
-        // Determine the best way to display the data
-        if (resultArray.length > 0) {
-          if (resultArray.length >= 3 && Object.keys(resultArray[0]).some(key => 
-            typeof resultArray[0][key] === 'number')) {
-            setResponseType('chart');
-          } else if (resultArray.length > 1) {
-            setResponseType('table');
-          } else {
-            setResponseType('card');
-          }
-        }
-        
-        setIsLoading(false);
-      } catch (err) {
-        setError(`Failed to fetch data: ${err instanceof Error ? err.message : String(err)}`);
-        setIsLoading(false);
-      }
-    };
+    // We only trigger the API call when the search button is clicked
+    const { data, isLoading, error, responseType } = useApiRequest({
+      url: apiUrl,
+      searchTerm: activeSearch
+    });
     
-    // Determine numerical fields for chart
-    const getChartFields = () => {
-      if (!data.length) return { keyField: '', valueField: '' };
-      
-      const firstItem = data[0];
-      const keys = Object.keys(firstItem);
-      
-      const nonNumberField = keys.find(key => typeof firstItem[key] !== 'number');
-      const numberField = keys.find(key => typeof firstItem[key] === 'number');
-      
-      return {
-        keyField: nonNumberField || keys[0],
-        valueField: numberField || keys[1],
-      };
+    const handleSearch = () => {
+      setActiveSearch(searchTerm);
     };
     
     // Render chart component if data looks numerical
     const renderChart = () => {
-      const { keyField, valueField } = getChartFields();
+      if (!data || !Array.isArray(data)) return null;
+      
+      const { keyField, valueField } = getChartFields(Array.isArray(data) ? data : [data]);
       if (!keyField || !valueField) return null;
       
       return (
@@ -88,7 +42,7 @@ export const generateApiSearchComponent = (prompt: string): GeneratedComponent =
           <CardContent>
             <ChartContainer className="aspect-[4/3]" config={{}}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
+                <BarChart data={Array.isArray(data) ? data : [data]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey={keyField} />
                   <YAxis />
@@ -106,7 +60,7 @@ export const generateApiSearchComponent = (prompt: string): GeneratedComponent =
     
     // Render table with dynamic headers based on data
     const renderTable = () => {
-      if (!data.length) return null;
+      if (!data || !Array.isArray(data) || data.length === 0) return null;
       
       const headers = Object.keys(data[0]).slice(0, 5); // Limit to first 5 fields
       
@@ -147,9 +101,9 @@ export const generateApiSearchComponent = (prompt: string): GeneratedComponent =
     
     // Render card for single item
     const renderCard = () => {
-      if (!data.length) return null;
+      if (!data || (Array.isArray(data) && data.length === 0)) return null;
       
-      const item = data[0];
+      const item = Array.isArray(data) ? data[0] : data;
       const fields = Object.entries(item).slice(0, 5); // Limit to first 5 fields
       
       return (
@@ -208,15 +162,15 @@ export const generateApiSearchComponent = (prompt: string): GeneratedComponent =
           </div>
         )}
         
-        {!isLoading && !error && data.length === 0 && (
+        {!isLoading && !error && (!data || (Array.isArray(data) && data.length === 0)) && activeSearch && (
           <div className="text-center py-8 text-gray-500">
             No results found. Try a different search term.
           </div>
         )}
         
-        {!isLoading && !error && data.length > 0 && responseType === 'chart' && renderChart()}
-        {!isLoading && !error && data.length > 0 && responseType === 'table' && renderTable()}
-        {!isLoading && !error && data.length > 0 && responseType === 'card' && renderCard()}
+        {!isLoading && !error && data && responseType === 'chart' && renderChart()}
+        {!isLoading && !error && data && responseType === 'table' && renderTable()}
+        {!isLoading && !error && data && responseType === 'card' && renderCard()}
       </div>
     );
   };
@@ -230,13 +184,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Search } from 'lucide-react';
 
 const ApiSearchComponent = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [data, setData] = useState([]);
+  const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [responseType, setResponseType] = useState(null);
@@ -258,7 +211,7 @@ const ApiSearchComponent = () => {
       
       const result = await response.json();
       const resultArray = Array.isArray(result) ? result : [result];
-      setData(resultArray);
+      setData(result);
       
       // Determine the best way to display the data
       if (resultArray.length > 0) {

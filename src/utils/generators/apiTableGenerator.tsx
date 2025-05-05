@@ -1,50 +1,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { GeneratedComponent } from '../types';
+import { extractApiUrl, extractHeaders, useApiRequest } from '../services/apiService';
 
 export const generateApiTableComponent = (prompt: string): GeneratedComponent => {
-  // Extract API URL from the prompt
-  const apiUrlMatch = prompt.match(/api\s+(https?:\/\/[^\s]+)/i);
-  const apiUrl = apiUrlMatch ? apiUrlMatch[1] : '';
-  
-  // Extract information from the prompt
-  const headerMatch = prompt.match(/header(?:s)? (?:names?|with names?)?(?::-|:)?\s*([^.]+)/i);
-  let headers: string[] = [];
-  
-  if (headerMatch && headerMatch[1]) {
-    headers = headerMatch[1]
-      .split(/,|and/)
-      .map(header => header.trim())
-      .filter(header => header.length > 0);
-  } else {
-    // Default headers if not specified
-    headers = ["id", "name", "email"];
-  }
+  // Extract API URL and headers from the prompt
+  const apiUrl = extractApiUrl(prompt);
+  const headers = extractHeaders(prompt);
   
   // Create a component that will fetch and display data
   const ApiDataTable = () => {
-    const [data, setData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          const response = await fetch(apiUrl);
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          const result = await response.json();
-          setData(Array.isArray(result) ? result : [result]);
-          setIsLoading(false);
-        } catch (err) {
-          setError(`Failed to fetch data: ${err instanceof Error ? err.message : String(err)}`);
-          setIsLoading(false);
-        }
-      };
-      
-      fetchData();
-    }, []);
+    const { data, isLoading, error } = useApiRequest({
+      url: apiUrl
+    });
     
     if (isLoading) {
       return <div className="flex justify-center items-center py-10">Loading data...</div>;
@@ -54,9 +22,11 @@ export const generateApiTableComponent = (prompt: string): GeneratedComponent =>
       return <div className="text-red-500 py-4">{error}</div>;
     }
     
-    if (!data.length) {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
       return <div className="py-4">No data available</div>;
     }
+    
+    const items = Array.isArray(data) ? data : [data];
     
     return (
       <div className="overflow-x-auto">
@@ -69,7 +39,7 @@ export const generateApiTableComponent = (prompt: string): GeneratedComponent =>
             </tr>
           </thead>
           <tbody>
-            {data.map((item, rowIndex) => (
+            {items.map((item, rowIndex) => (
               <tr key={rowIndex} className="bg-white border-b hover:bg-gray-50">
                 {headers.map((header, colIndex) => (
                   <td key={colIndex} className="px-6 py-4">
