@@ -13,7 +13,7 @@ const ComponentPreview = ({ component, code }: ComponentPreviewProps) => {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
-        <h2 className="text-xl font-bold">Component Preview</h2>
+        <h2 className="text-xl font-bold text-purple-600">Component Preview</h2>
       </div>
       <Tabs defaultValue="preview" className="flex-1">
         <div className="border-b px-4">
@@ -23,7 +23,7 @@ const ComponentPreview = ({ component, code }: ComponentPreviewProps) => {
           </TabsList>
         </div>
         <TabsContent value="preview" className="flex-1 p-4 overflow-auto">
-          <Card className="p-6 min-h-[200px]">
+          <Card className="p-6 min-h-[200px] max-h-[calc(100vh-200px)] overflow-auto">
             {component}
           </Card>
         </TabsContent>
